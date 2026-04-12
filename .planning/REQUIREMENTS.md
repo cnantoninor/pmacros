@@ -16,7 +16,7 @@
 
 ### Expansion
 
-- [ ] **EXPN-01**: `<tagname>` in a prompt is replaced with the macro's value (inline mode) via `UserPromptSubmit` hook
+- [ ] **EXPN-01**: `{{tagname}}` in a prompt is replaced with the macro's value (inline mode) via `UserPromptSubmit` hook
 - [ ] **EXPN-02**: Hook always exits 0 and never blocks the user's prompt — fails silently
 - [ ] **EXPN-03**: Hook logs errors to `~/.claude/pmacros/hook-errors.log` for diagnosis
 - [ ] **EXPN-04**: `/pmacro-preview` shows before/after expansion of the current prompt without sending
@@ -39,7 +39,7 @@
 
 - [ ] **UX-01**: Status line integration shows available macro tag names (registered via `settings.json` `statusLine.command`)
 - [ ] **UX-02**: `/pmacro-status` command shows hook health (last error, if any, from error log)
-- [ ] **UX-03**: Tag format is `<tagname>` — lowercase alphanumeric + hyphens, 1–32 chars
+- [ ] **UX-03**: Tag format is `{{tagname}}` — lowercase alphanumeric + hyphens, 1–32 chars
 
 ## v2 Requirements
 
