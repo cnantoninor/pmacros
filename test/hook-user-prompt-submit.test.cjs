@@ -41,6 +41,56 @@ test('UserPromptSubmit: invalid stdin JSON → exit 0, empty stdout', () => {
   assert.equal((r.stdout || '').trim(), '');
 });
 
+test('UserPromptSubmit: stdin over limit → exit 0, empty stdout', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacros-hook-limit-'));
+  const payload = JSON.stringify({
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'x'.repeat(80),
+  });
+  assert.ok(payload.length > 64, 'fixture should exceed test limit');
+  const r = runHook(payload, { HOME: tmp, PMACROS_MAX_STDIN_CHARS: '64' });
+  assert.equal(r.status, 0, r.stderr);
+  assert.equal((r.stdout || '').trim(), '');
+});
+
+test('UserPromptSubmit: invalid macros.json → pass through prompt, exit 0', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacros-hook-badjson-'));
+  const pmacros = path.join(tmp, '.claude', 'pmacros');
+  fs.mkdirSync(pmacros, { recursive: true });
+  fs.writeFileSync(path.join(pmacros, 'macros.json'), '{ not valid json', 'utf8');
+  const payload = JSON.stringify({
+    hook_event_name: 'UserPromptSubmit',
+    prompt: 'preserve {{x}} this',
+  });
+  const r = runHook(payload, { HOME: tmp });
+  assert.equal(r.status, 0, r.stderr);
+  const json = JSON.parse((r.stdout || '').trim());
+  assert.equal(json.hookSpecificOutput.updatedPrompt, 'preserve {{x}} this');
+});
+
+test('UserPromptSubmit: log write failure still returns expansion, exit 0', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacros-hook-nowrite-'));
+  const claudeDir = path.join(tmp, '.claude');
+  fs.mkdirSync(claudeDir, { recursive: true });
+  try {
+    fs.chmodSync(claudeDir, 0o555);
+    const payload = JSON.stringify({
+      hook_event_name: 'UserPromptSubmit',
+      prompt: 'a {{missing}} b',
+    });
+    const r = runHook(payload, { HOME: tmp });
+    assert.equal(r.status, 0, r.stderr);
+    const json = JSON.parse((r.stdout || '').trim());
+    assert.equal(json.hookSpecificOutput.updatedPrompt, 'a {{missing}} b');
+  } finally {
+    try {
+      fs.chmodSync(claudeDir, 0o755);
+    } catch {
+      /* tmp cleanup best-effort */
+    }
+  }
+});
+
 test('UserPromptSubmit: expands macro from seeded macros.json', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacros-hook-c-'));
   const pmacros = path.join(tmp, '.claude', 'pmacros');
