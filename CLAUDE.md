@@ -3,7 +3,7 @@
 
 **pmacros**
 
-pmacros is a prompt macro injection system for Claude Code. Users define short `<tagname>` tags that transparently expand to longer text before Claude receives the prompt — via a `UserPromptSubmit` hook. Macros can be injected manually (only when the tag appears) or automatically on every prompt, and are stored locally per-user or per-project.
+pmacros is a prompt macro injection system for Claude Code. Users define short `{{tagname}}` tags that transparently expand to longer text before Claude receives the prompt — via a `UserPromptSubmit` hook. Macros can be injected manually (only when the tag appears) or automatically on every prompt, and are stored locally per-user or per-project.
 
 **Core Value:** Zero-friction prompt augmentation: define once, inject everywhere — without touching the prompt input.
 
@@ -12,7 +12,7 @@ pmacros is a prompt macro injection system for Claude Code. Users define short `
 - **Dependencies**: No external npm packages in the hook script or install script — Node.js stdlib only. Minimizes install friction for all users.
 - **Compatibility**: Must work on Linux, macOS, and WSL2 (Windows). Atomic writes use `fs.renameSync` which is safe on same-filesystem temp files.
 - **Error handling**: Hook must always exit 0 and never block the user's prompt, even on errors. Fail silently, pass through original prompt.
-- **Tag format**: `<tagname>` only (angle-bracket style). Names: lowercase alphanumeric + hyphens, 1–32 chars.
+- **Tag format**: `{{tagname}}` only (double-brace delimiter). Names: lowercase alphanumeric + hyphens, 1–32 chars.
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->
@@ -57,10 +57,10 @@ pmacros is a prompt macro injection system for Claude Code. Users define short `
 - Status line temp files (if needed)
 ## Hook Input/Output Implementation
 ## Macro Storage Schema
-- `inline` — Replace `<tagname>` in-place where it appears
+- `inline` — Replace `{{tagname}}` in-place where it appears
 - `start` — Prepend to beginning of prompt
 - `end` — Append to end of prompt
-- `manual` — Expand only when `<tagname>` appears in prompt
+- `manual` — Expand only when `{{tagname}}` appears in prompt
 - `auto` — Always inject (start/end) regardless of tags in prompt
 ## Supporting Libraries (None — Stdlib Only)
 - Minimizes install friction for end users
