@@ -2,7 +2,7 @@
 
 ## What This Is
 
-pmacros is a prompt macro injection system for Claude Code. Users define short `<tagname>` tags that transparently expand to longer text before Claude receives the prompt — via a `UserPromptSubmit` hook. Macros can be injected manually (only when the tag appears) or automatically on every prompt, and are stored locally per-user or per-project.
+pmacros is a prompt macro injection system for Claude Code. Users define short `{{tagname}}` tags that transparently expand to longer text before Claude receives the prompt — via a `UserPromptSubmit` hook. Macros can be injected manually (only when the tag appears) or automatically on every prompt, and are stored locally per-user or per-project.
 
 ## Core Value
 
@@ -12,13 +12,13 @@ Zero-friction prompt augmentation: define once, inject everywhere — without to
 
 ### Validated
 
-(None yet — ship to validate)
+- **Phase 1 (Core Engine):** User-scope storage at `~/.claude/pmacros/macros.json` with atomic writes (`schemaVersion`, `approximateTokens` on write); `{{tagname}}` expansion via `UserPromptSubmit` hook (JSON stdout / silent fail); JSONL `hook-errors.log`; `/pmacro-add`, `/pmacro-list`, `/pmacro-preview`, `/pmacro-status` via `scripts/pmacro.cjs` and repo `.claude/skills/pmacro-*` (manual copy to `~/.claude/skills/` per `docs/MANUAL-SETUP-PHASE1.md`).
 
 ### Active
 
-- [ ] Macro CRUD via slash commands (`/pmacro-add`, `/pmacro-list`, `/pmacro-update`, `/pmacro-remove`) using `AskUserQuestion` for interactive flows
-- [ ] `<tagname>` expansion via `UserPromptSubmit` hook (Node.js, no external dependencies)
-- [ ] Manual injection mode: tag expands only when `<tagname>` appears literally in the prompt
+- [ ] Macro CRUD via slash commands: `/pmacro-update`, `/pmacro-remove` (Phase 2); add/list delivered in Phase 1
+- [x] `{{tagname}}` expansion via `UserPromptSubmit` hook (Node.js, no external dependencies) — Phase 1
+- [ ] Manual injection mode: tag expands only when `{{tagname}}` appears literally in the prompt (full mode schema start/end/auto — Phase 2+)
 - [ ] Auto injection mode: macro is always appended/prepended to every prompt
 - [ ] Per-macro position control: `inline` (replace tag), `start` (prepend), `end` (append)
 - [ ] Optional `description` field per macro (shown in list and status line)
@@ -48,17 +48,17 @@ Zero-friction prompt augmentation: define once, inject everywhere — without to
 - **Dependencies**: No external npm packages in the hook script or install script — Node.js stdlib only. Minimizes install friction for all users.
 - **Compatibility**: Must work on Linux, macOS, and WSL2 (Windows). Atomic writes use `fs.renameSync` which is safe on same-filesystem temp files.
 - **Error handling**: Hook must always exit 0 and never block the user's prompt, even on errors. Fail silently, pass through original prompt.
-- **Tag format**: `<tagname>` only (angle-bracket style). Names: lowercase alphanumeric + hyphens, 1–32 chars.
+- **Tag format**: `{{tagname}}` only (double-brace delimiter). Names: lowercase alphanumeric + hyphens, 1–32 chars.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Node.js for hook script (no deps) | Available everywhere Claude Code runs; no install step for end users | — Pending |
-| Atomic writes via temp file + rename | Prevents corrupt macros.json on crash or concurrent access | — Pending |
-| Copy skills to `~/.claude/skills/` on install (not symlinks) | Avoids broken references if project is moved; install.js upgrades by overwriting | — Pending |
+| Node.js for hook script (no deps) | Available everywhere Claude Code runs; no install step for end users | Delivered Phase 1 |
+| Atomic writes via temp file + rename | Prevents corrupt macros.json on crash or concurrent access | Delivered Phase 1 |
+| Copy skills to `~/.claude/skills/` on install (not symlinks) | Avoids broken references if project is moved; install.js upgrades by overwriting | Manual copy Phase 1; scripted install Phase 2 |
 | Project-level macros override user-level on name collision | Standard convention; project-specific context should win over global defaults | — Pending |
-| `approximateTokens` computed on write, not at runtime | Avoids per-prompt computation cost; field is informational, not used for decisions | — Pending |
+| `approximateTokens` computed on write, not at runtime | Avoids per-prompt computation cost; field is informational, not used for decisions | Delivered Phase 1 |
 | Status line for discoverability (not per-macro slash commands) | Simpler, no restart required, works for all macros immediately | — Pending |
 
 ## Evolution
@@ -79,4 +79,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-12 after initialization*
+*Last updated: 2026-04-12 after Phase 1 (Core Engine) completion*
