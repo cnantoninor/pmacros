@@ -70,8 +70,8 @@
 |-------------|-------|--------|
 | CRUD-01 | Phase 1 | Pending |
 | CRUD-02 | Phase 1 | Pending |
-| CRUD-03 | Phase 1 | Pending |
-| CRUD-04 | Phase 1 | Pending |
+| CRUD-03 | Phase 2 | Pending |
+| CRUD-04 | Phase 2 | Pending |
 | CRUD-05 | Phase 1 | Pending |
 | CRUD-06 | Phase 1 | Pending |
 | EXPN-01 | Phase 1 | Pending |
@@ -97,4 +97,4 @@
 
 ---
 *Requirements defined: 2026-04-12*
-*Last updated: 2026-04-12 after initial definition*
+*Last updated: 2026-04-12 after roadmap creation*
