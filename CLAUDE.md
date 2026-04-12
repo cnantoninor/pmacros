@@ -3,16 +3,20 @@
 
 **pmacros**
 
-pmacros is a prompt macro injection system for Claude Code. Users define short `<tagname>` tags that transparently expand to longer text before Claude receives the prompt — via a `UserPromptSubmit` hook. Macros can be injected manually (only when the tag appears) or automatically on every prompt, and are stored locally per-user or per-project.
+pmacros is a prompt macro injection system for Claude Code. Users define short `{{tagname}}` tags that transparently expand to longer text before Claude receives the prompt — via a `UserPromptSubmit` hook.
+
+**Phase 1 (current repo):** Inline expansion only (`{{tag}}` in the prompt is replaced). Storage is **user-level** at `~/.claude/pmacros/macros.json`. Setup is **manual** (hook + skills); there is **no `install.js` yet**. CLI: `scripts/pmacro.cjs` (`add`, `list`, `preview`, `status`).
+
+**Roadmap (not Phase 1):** Automatic injection on every prompt (start/end/auto-style behavior), **per-project** macros with merge (project overrides user), and an **`install.js`** idempotent installer. The sections below describe the full target design; where it differs from Phase 1, Phase 1 wins for “what exists in code today.”
 
 **Core Value:** Zero-friction prompt augmentation: define once, inject everywhere — without touching the prompt input.
 
 ### Constraints
 
-- **Dependencies**: No external npm packages in the hook script or install script — Node.js stdlib only. Minimizes install friction for all users.
+- **Dependencies**: No external npm packages on the hook/CLI path (and none in `install.js` when it lands) — Node.js stdlib only. Minimizes install friction for all users.
 - **Compatibility**: Must work on Linux, macOS, and WSL2 (Windows). Atomic writes use `fs.renameSync` which is safe on same-filesystem temp files.
 - **Error handling**: Hook must always exit 0 and never block the user's prompt, even on errors. Fail silently, pass through original prompt.
-- **Tag format**: `<tagname>` only (angle-bracket style). Names: lowercase alphanumeric + hyphens, 1–32 chars.
+- **Tag format**: `{{tagname}}` only (double-brace delimiter). Names: lowercase alphanumeric + hyphens, 1–32 chars.
 <!-- GSD:project-end -->
 
 <!-- GSD:stack-start source:research/STACK.md -->
@@ -34,12 +38,14 @@ pmacros is a prompt macro injection system for Claude Code. Users define short `
 ### Skill System (Slash Commands)
 | Component | Format | Purpose |
 |-----------|--------|---------|
-| **Skill Directory** | `~/.claude/skills/pmacro-{cmd}/SKILL.md` | Define `/pmacro-add`, `/pmacro-list`, `/pmacro-update`, `/pmacro-remove` |
+| **Skill Directory** | `~/.claude/skills/pmacro-{cmd}/SKILL.md` | Phase 1: `/pmacro-add`, `/pmacro-list`, `/pmacro-preview`, `/pmacro-status` (see repo `.claude/skills/`) |
 | **SKILL.md Frontmatter** | YAML between `---` markers | Metadata for skill discovery and invocation |
 | **Frontmatter Fields** | `name`, `description`, `disable-model-invocation` | name: command slug; description: when to use; disable-model-invocation: true for manual-only |
 | **Skill Content** | Markdown + inline shell commands | Instructions for `/AskUserQuestion` flow |
 ### Status Line Integration
-### Install Script
+### Install script (planned; not in Phase 1)
+Phase 1 uses **manual** registration — see [README.md](README.md) and [docs/MANUAL-SETUP-PHASE1.md](docs/MANUAL-SETUP-PHASE1.md). The table below is the intended shape of a future `install.js`.
+
 | Component | Pattern | Purpose |
 |-----------|---------|---------|
 | **Entry Point** | `node install.js` | Idempotent setup from project root |
@@ -52,19 +58,21 @@ pmacros is a prompt macro injection system for Claude Code. Users define short `
 - `fs.renameSync()` is atomic on Linux, macOS, WSL2 (all supported platforms)
 - No external dependencies (stdlib only)
 - Synchronous operations safe in hook context (timeout: 10 minutes default)
-- `~/.claude/pmacros/macros.json` (user-level storage)
-- `.claude/pmacros/macros.json` (project-level storage, git-ignored)
+- `~/.claude/pmacros/macros.json` (user-level storage — **Phase 1**)
+- `.claude/pmacros/macros.json` (project-level storage, git-ignored — **planned**)
 - Status line temp files (if needed)
 ## Hook Input/Output Implementation
 ## Macro Storage Schema
-- `inline` — Replace `<tagname>` in-place where it appears
-- `start` — Prepend to beginning of prompt
-- `end` — Append to end of prompt
-- `manual` — Expand only when `<tagname>` appears in prompt
-- `auto` — Always inject (start/end) regardless of tags in prompt
+**Phase 1:** behavior matches `inline` / tag-driven replacement only (no separate mode field required). Planned modes for later phases:
+
+- `inline` — Replace `{{tagname}}` in-place where it appears (**Phase 1**)
+- `start` — Prepend to beginning of prompt (planned)
+- `end` — Append to end of prompt (planned)
+- `manual` — Expand only when `{{tagname}}` appears in prompt (planned; overlaps Phase 1 inline behavior)
+- `auto` — Always inject (start/end) regardless of tags in prompt (planned)
 ## Supporting Libraries (None — Stdlib Only)
 - Minimizes install friction for end users
-- Claude Code users may not have npm globally; install.js must work standalone
+- Claude Code users may not have npm globally; future install.js must work standalone
 - Node.js stdlib is sufficient for: file I/O, path handling, JSON, stdin/stdout
 - Avoids dependency versioning issues
 - Simpler security audit surface (fewer moving parts)
@@ -77,21 +85,21 @@ pmacros is a prompt macro injection system for Claude Code. Users define short `
 - ❌ `yargs` or `commander` — Slash commands use AskUserQuestion prompts
 - ❌ `lodash` — No array/object manipulations beyond native methods
 ## Configuration Files (Not Committed)
-- `~/.claude/settings.json` — Hook registration (auto-merged by install.js)
-- `~/.claude/pmacros/macros.json` — User's macros (git-ignored, persistent)
-- `~/.claude/skills/pmacro-{cmd}/SKILL.md` — Skill files (auto-copied)
-- `.claude/settings.json` — Project-specific hooks (committed)
-- `.claude/pmacros/macros.json` — Project-specific macros (git-ignored)
-- `.claude/skills/pmacro-{cmd}/SKILL.md` — Project-specific skills (committed)
-- `.claude/.pmacros-installed` — Idempotency lock (git-ignored)
+- `~/.claude/settings.json` — Hook registration (Phase 1: manual; future: auto-merged by install.js)
+- `~/.claude/pmacros/macros.json` — User's macros (git-ignored, persistent) (**Phase 1**)
+- `~/.claude/skills/pmacro-{cmd}/SKILL.md` — Skill files (Phase 1: copy from repo; future: auto-copied by install.js)
+- `.claude/settings.json` — Project-specific hooks (committed; **planned** alongside project macros)
+- `.claude/pmacros/macros.json` — Project-specific macros (git-ignored; **planned**)
+- `.claude/skills/pmacro-{cmd}/SKILL.md` — Project-specific skills (committed; **optional**)
+- `.claude/.pmacros-installed` — Idempotency lock (git-ignored; **with install.js**)
 ## Key Technical Decisions
 | Decision | Rationale | Tradeoffs |
 |----------|-----------|-----------|
 | **Node.js stdlib only** | Zero install friction for users | Slightly more manual code for atomic writes |
 | **Temp file + rename for atomicity** | Safe on POSIX and Windows same-filesystem | Cannot rename across filesystems (OK for ~/.claude/) |
 | **Plain text stdout (v1)** | Simple; always fails silently | Cannot set session title or other structured outputs |
-| **Copy skills (not symlink)** | Works if project moves; install.js upgrades by overwriting | Slightly more disk space; no auto-sync on skill updates |
-| **Project macros override user** | Standard convention; project-specific context wins | Requires explicit merge/conflict resolution |
+| **Copy skills (not symlink)** | Works if project moves; future install.js upgrades by overwriting | Slightly more disk space; no auto-sync on skill updates |
+| **Project macros override user** (planned) | Standard convention; project-specific context wins | Requires explicit merge/conflict resolution; not implemented in Phase 1 |
 | **Status line as separate command** | Lighter weight than hook; can be disabled without restart | Requires separate registration in settings.json |
 | **Slash commands via skills** | Auto-discoverable; AskUserQuestion for prompts; no restart needed | Cannot per-macro commands per v1 scope |
 ## Validation and Error Handling

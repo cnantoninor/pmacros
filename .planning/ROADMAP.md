@@ -12,7 +12,7 @@ pmacros ships in two phases. Phase 1 builds the core engine: users can define ma
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Core Engine** - Hook expansion, user-scope storage, add/list/preview, error safety
+- [x] **Phase 1: Core Engine** - Hook expansion, user-scope storage, add/list/preview, error safety (completed 2026-04-12)
 - [ ] **Phase 2: Full Integration** - Project scopes, update/remove, install script, status line
 
 ## Phase Details
@@ -23,11 +23,17 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: CRUD-01, CRUD-02, CRUD-05, CRUD-06, EXPN-01, EXPN-02, EXPN-03, EXPN-04, STOR-01, STOR-03, STOR-04, STOR-05, UX-02, UX-03
 **Success Criteria** (what must be TRUE):
   1. User can add a macro with a tag name and value via `/pmacro-add` and see it stored in `~/.claude/pmacros/macros.json`
-  2. Typing `<tagname>` in a Claude Code prompt causes the macro value to be substituted before Claude receives it
+  2. Typing `{{tagname}}` in a Claude Code prompt causes the macro value to be substituted before Claude receives it
   3. User can run `/pmacro-preview` and see exactly what the prompt will look like after expansion, without sending it
   4. Hook errors are silently suppressed (prompt always passes through) and written to `hook-errors.log`, visible via `/pmacro-status`
   5. `macros.json` is never corrupted on crash — all writes use atomic temp-file rename
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [x] 01-01-PLAN.md — Canonical `{{tagname}}` docs + Phase 1 manual hook/skill setup
+- [x] 01-02-PLAN.md — Shared library (paths, atomic store, expand, JSONL log) + tests
+- [x] 01-03-PLAN.md — UserPromptSubmit hook + hook tests
+- [x] 01-04-PLAN.md — `scripts/pmacro.cjs` + four skills (add, list, preview, status) + CLI tests
 
 ### Phase 2: Full Integration
 **Goal**: pmacros is fully operational in Claude Code with project scopes, complete CRUD, cross-platform install, and status line visibility
@@ -48,5 +54,5 @@ Phases execute in numeric order: 1 → 2
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Engine | 0/? | Not started | - |
+| 1. Core Engine | 4/4 | Complete | 2026-04-12 |
 | 2. Full Integration | 0/? | Not started | - |
