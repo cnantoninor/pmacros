@@ -1,0 +1,8 @@
+{
+  "name": "pmacros",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test --test-concurrency=1"
+  }
+}
