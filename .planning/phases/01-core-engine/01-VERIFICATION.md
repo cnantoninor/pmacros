@@ -2,6 +2,8 @@
 status: passed
 phase: 01-core-engine
 verified: 2026-04-12
+human_verification: accepted
+human_verified_at: "2026-04-12"
 ---
 
 # Phase 1 verification
@@ -31,9 +33,9 @@ cd /home/arau6/projects/pmacros && node scripts/pmacro.cjs list
 
 Addressed in this phase: CRUD-01, CRUD-02, CRUD-05, CRUD-06, EXPN-01, EXPN-02, EXPN-03, EXPN-04, STOR-01, STOR-03, STOR-04, STOR-05, UX-02, UX-03 (delimiter alignment via docs + UX-03 text).
 
-## Human follow-up (optional)
+## Human verification
 
-End-to-end check in Claude Code: merge `UserPromptSubmit` per `docs/MANUAL-SETUP-PHASE1.md`, copy skills, submit a real prompt containing `{{your-tag}}`.
+**Accepted (2026-04-12)** — Manual testing (CLI, hook stdin/stdout, and/or Claude Code setup per `docs/MANUAL-SETUP-PHASE1.md`) was performed and signed off by the project owner. Optional follow-up in the notes below remains reference-only if a future Claude Code build behaves differently.
 
 ## Notes
 
