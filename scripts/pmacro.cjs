@@ -6,9 +6,16 @@ const path = require('path');
 const os = require('os');
 
 const libDir = path.join(__dirname, '..', 'lib');
-const { upsertMacro, readMacrosSync, validateTagName } = require(path.join(libDir, 'macros-store.cjs'));
+const {
+  upsertMacro,
+  readMacrosSync,
+  validateTagName,
+  updateMacroAtPath,
+  removeMacroAtPath,
+  getMergedMacrosSync,
+} = require(path.join(libDir, 'macros-store.cjs'));
 const { expandPrompt } = require(path.join(libDir, 'expand.cjs'));
-const { getMacrosPath, getHookErrorsLogPath } = require(path.join(libDir, 'paths.cjs'));
+const { getMacrosPath, getHookErrorsLogPath, getProjectMacrosPath } = require(path.join(libDir, 'paths.cjs'));
 
 /** T-04-03: avoid OOM from huge macro values */
 const MAX_VALUE_LEN = 1024 * 1024;
@@ -26,6 +33,19 @@ function previewCell(s) {
     return t;
   }
   return `${t.slice(0, 40)}…`;
+}
+
+/**
+ * Extract --project flag from argv array.
+ * Returns { useProject: boolean, rest: string[] } where rest has the flag removed.
+ */
+function extractProjectFlag(argv) {
+  const idx = argv.indexOf('--project');
+  if (idx === -1) {
+    return { useProject: false, rest: argv };
+  }
+  const rest = argv.slice(0, idx).concat(argv.slice(idx + 1));
+  return { useProject: true, rest };
 }
 
 function cmdAdd(argv) {
@@ -50,13 +70,13 @@ function cmdAdd(argv) {
 }
 
 function cmdList() {
-  let data;
+  let merged;
   try {
-    data = readMacrosSync();
+    merged = getMergedMacrosSync(process.cwd());
   } catch (e) {
     die(`cannot read macros: ${e.message}`, 1);
   }
-  const macros = data.macros || {};
+  const macros = merged.macros || {};
   const keys = Object.keys(macros);
   if (keys.length === 0) {
     console.log('No macros yet — run /pmacro-add');
@@ -79,17 +99,64 @@ function cmdPreview(argv) {
     die('usage: pmacro preview <prompt words...>');
   }
   const prompt = parts.join(' ');
-  let data;
+  let merged;
   try {
-    data = readMacrosSync();
+    merged = getMergedMacrosSync(process.cwd());
   } catch (e) {
     die(`cannot read macros: ${e.message}`, 1);
   }
-  const { text } = expandPrompt(prompt, data.macros || {});
+  const { text } = expandPrompt(prompt, merged.macros || {});
   console.log('BEFORE:');
   console.log(prompt);
   console.log('AFTER:');
   console.log(text);
+}
+
+function cmdUpdate(argv) {
+  // usage: pmacro update [--project] <tag> <value> [description...]
+  const { useProject, rest } = extractProjectFlag(argv);
+  // rest[0..1] = ['node', 'pmacro.cjs'], rest[2] = 'update', rest[3] = tag, rest[4] = value, rest[5+] = description
+  const tag = rest[3];
+  const value = rest[4];
+  const descParts = rest.slice(5);
+  if (!tag || value === undefined) {
+    die('usage: pmacro update [--project] <tag> <value> [description...]');
+  }
+  if (!validateTagName(tag)) {
+    die('invalid tag name (lowercase letters, digits, hyphens; length 1–32)');
+  }
+  if (value.length > MAX_VALUE_LEN) {
+    die('value exceeds maximum length');
+  }
+  const description = descParts.length ? descParts.join(' ') : undefined;
+  const macrosPath = useProject
+    ? getProjectMacrosPath(process.cwd())
+    : getMacrosPath();
+  try {
+    updateMacroAtPath({ macrosPath, tag, value, description });
+  } catch (e) {
+    die(e.message || String(e), 1);
+  }
+}
+
+function cmdRemove(argv) {
+  // usage: pmacro remove [--project] <tag>
+  const { useProject, rest } = extractProjectFlag(argv);
+  const tag = rest[3];
+  if (!tag) {
+    die('usage: pmacro remove [--project] <tag>');
+  }
+  if (!validateTagName(tag)) {
+    die('invalid tag name (lowercase letters, digits, hyphens; length 1–32)');
+  }
+  const macrosPath = useProject
+    ? getProjectMacrosPath(process.cwd())
+    : getMacrosPath();
+  try {
+    removeMacroAtPath({ macrosPath, tag });
+  } catch (e) {
+    die(e.message || String(e), 1);
+  }
 }
 
 function parseLogRecord(line) {
@@ -216,15 +283,23 @@ function main(argv) {
     case 'preview':
       cmdPreview(argv);
       break;
+    case 'update':
+      cmdUpdate(argv);
+      break;
+    case 'remove':
+      cmdRemove(argv);
+      break;
     case 'status':
       cmdStatus(argv);
       break;
     default:
       die(
-        'usage: pmacro <add|list|preview|status> …\n' +
+        'usage: pmacro <add|list|preview|update|remove|status> …\n' +
           '  add <tag> <value> [description...]\n' +
           '  list\n' +
           '  preview <prompt words...>\n' +
+          '  update [--project] <tag> <value> [description...]\n' +
+          '  remove [--project] <tag>\n' +
           '  status\n' +
           '  status tail <n|all>'
       );
