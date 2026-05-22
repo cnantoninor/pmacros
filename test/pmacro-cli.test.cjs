@@ -19,6 +19,15 @@ function run(args, env) {
   });
 }
 
+function runIn(args, env, cwd) {
+  return spawnSync(process.execPath, [cli, ...args], {
+    cwd: cwd || repoRoot,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+    maxBuffer: 10 * 1024 * 1024,
+  });
+}
+
 test('pmacro add → list shows tag and approximateTokens', () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-cli-'));
   const value = 'hello value';
@@ -80,4 +89,96 @@ test('pmacro status tail returns last lines', () => {
   assert.equal(r.status, 0, r.stderr);
   assert.match(r.stdout, /"message":"b"/);
   assert.ok(!r.stdout.includes('"message":"a"'));
+});
+
+test('pmacro update changes existing user macro value', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-cli-upd-'));
+  // Add a user macro
+  const r0 = run(['add', 'greet', 'hello world', 'greeting'], { HOME: tmp });
+  assert.equal(r0.status, 0, r0.stderr);
+
+  // Update it
+  const r1 = run(['update', 'greet', 'hi there', 'updated greeting'], { HOME: tmp });
+  assert.equal(r1.status, 0, r1.stderr);
+
+  // Verify the updated value is stored
+  const macrosPath = path.join(tmp, '.claude', 'pmacros', 'macros.json');
+  const raw = JSON.parse(fs.readFileSync(macrosPath, 'utf8'));
+  assert.equal(raw.macros['greet'].value, 'hi there');
+});
+
+test('pmacro update fails with non-zero exit when tag missing', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-cli-upd-missing-'));
+  // Do not add the tag — update should fail
+  const r = run(['update', 'nonexistent', 'some value'], { HOME: tmp });
+  assert.notEqual(r.status, 0, 'expected non-zero exit for missing tag');
+  assert.match(r.stderr, /not found/i);
+});
+
+test('pmacro remove deletes user macro', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-cli-rm-'));
+  // Add a macro then remove it
+  const r0 = run(['add', 'to-remove', 'some value'], { HOME: tmp });
+  assert.equal(r0.status, 0, r0.stderr);
+
+  const r1 = run(['remove', 'to-remove'], { HOME: tmp });
+  assert.equal(r1.status, 0, r1.stderr);
+
+  const macrosPath = path.join(tmp, '.claude', 'pmacros', 'macros.json');
+  const raw = JSON.parse(fs.readFileSync(macrosPath, 'utf8'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(raw.macros, 'to-remove'), 'tag should be gone');
+});
+
+test('pmacro remove --project removes project macro only, user macro intact', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-cli-rm-proj-'));
+  const projDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-proj-'));
+
+  // Add user-level macro
+  const r0 = run(['add', 'shared', 'user-value'], { HOME: tmp });
+  assert.equal(r0.status, 0, r0.stderr);
+
+  // Write project-level macro directly to simulate project override
+  const projMacrosDir = path.join(projDir, '.claude', 'pmacros');
+  fs.mkdirSync(projMacrosDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(projMacrosDir, 'macros.json'),
+    JSON.stringify({ schemaVersion: 1, macros: { shared: { value: 'project-value', approximateTokens: 1 } } }, null, 2) + '\n',
+    'utf8'
+  );
+
+  // Remove --project removes only the project-level entry
+  const r1 = runIn(['remove', '--project', 'shared'], { HOME: tmp }, projDir);
+  assert.equal(r1.status, 0, r1.stderr);
+
+  // Project macros.json should no longer have 'shared'
+  const projRaw = JSON.parse(fs.readFileSync(path.join(projMacrosDir, 'macros.json'), 'utf8'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(projRaw.macros, 'shared'), 'project macro should be removed');
+
+  // User macros.json should still have 'shared'
+  const userRaw = JSON.parse(fs.readFileSync(path.join(tmp, '.claude', 'pmacros', 'macros.json'), 'utf8'));
+  assert.equal(userRaw.macros['shared'].value, 'user-value', 'user macro should be intact');
+});
+
+test('pmacro preview shows project override via merged macros', () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-cli-prev-merged-'));
+  const projDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pmacro-proj-prev-'));
+
+  // Add user-level macro
+  const r0 = run(['add', 'ctx', 'user-context'], { HOME: tmp });
+  assert.equal(r0.status, 0, r0.stderr);
+
+  // Write project-level override
+  const projMacrosDir = path.join(projDir, '.claude', 'pmacros');
+  fs.mkdirSync(projMacrosDir, { recursive: true });
+  fs.writeFileSync(
+    path.join(projMacrosDir, 'macros.json'),
+    JSON.stringify({ schemaVersion: 1, macros: { ctx: { value: 'project-context', approximateTokens: 2 } } }, null, 2) + '\n',
+    'utf8'
+  );
+
+  // Preview in the project dir — should see project-context (project overrides user)
+  const r = runIn(['preview', '{{ctx}}'], { HOME: tmp }, projDir);
+  assert.equal(r.status, 0, r.stderr);
+  assert.match(r.stdout, /project-context/);
+  assert.ok(!r.stdout.includes('user-context'), 'user value should be overridden by project');
 });
