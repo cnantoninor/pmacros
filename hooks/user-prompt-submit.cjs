@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 
 const { expandPrompt } = require(path.join(__dirname, '..', 'lib', 'expand.cjs'));
-const { readMacrosSync } = require(path.join(__dirname, '..', 'lib', 'macros-store.cjs'));
+const { getMergedMacrosSync } = require(path.join(__dirname, '..', 'lib', 'macros-store.cjs'));
 const { appendLog } = require(path.join(__dirname, '..', 'lib', 'error-log.cjs'));
 
 const DEFAULT_MAX_STDIN_CHARS = 32 * 1024 * 1024;
@@ -70,10 +70,33 @@ function main() {
 
     const promptText = typeof event.prompt === 'string' ? event.prompt : '';
 
+    // Resolve project root from hook event fields (D-02), falling back to process.cwd()
+    const cwd =
+      typeof event.cwd === 'string'
+        ? event.cwd
+        : typeof event.workspaceRoot === 'string'
+        ? event.workspaceRoot
+        : process.cwd();
+
     let macros = {};
     try {
-      const data = readMacrosSync();
-      macros = data.macros || {};
+      const merged = getMergedMacrosSync(cwd);
+      macros = merged.macros || {};
+      // Log warnings for failed sides (path only, never macro values)
+      if (!merged.userResult.ok) {
+        safeAppendLog({
+          level: 'warn',
+          event: 'UserPromptSubmit',
+          message: merged.userResult.message,
+        });
+      }
+      if (!merged.projectResult.ok) {
+        safeAppendLog({
+          level: 'warn',
+          event: 'UserPromptSubmit',
+          message: merged.projectResult.message,
+        });
+      }
     } catch (e) {
       safeAppendLog({
         level: 'error',
