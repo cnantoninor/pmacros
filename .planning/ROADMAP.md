@@ -47,8 +47,8 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Project/user merge, hook `cwd` resolution, merge tests
-- [ ] 02-02-PLAN.md — `pmacro update`/`remove`, merged list/preview, skills
+- [x] 02-01-PLAN.md — Project/user merge, hook `cwd` resolution, merge tests
+- [x] 02-02-PLAN.md — `pmacro update`/`remove`, merged list/preview, skills
 - [ ] 02-03-PLAN.md — `install.js`, skill backup, status line script, lock file
 - [ ] 02-04-PLAN.md — CI matrix (Linux/macOS), README/manual docs, roadmap index
 **UI hint**: yes
