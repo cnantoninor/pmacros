@@ -44,13 +44,7 @@ Plans:
   2. A project-level macro at `.claude/pmacros/macros.json` overrides the same-named user-level macro during expansion
   3. Running `node install.js` registers the hook and copies skill files idempotently — safe to re-run on all three platforms (Linux, macOS, WSL2)
   4. The Claude Code status line shows available macro tag names and updates immediately when macros change
-**Plans**: 4 plans
-
-Plans:
-- [x] 02-01-PLAN.md — Project/user merge, hook `cwd` resolution, merge tests
-- [x] 02-02-PLAN.md — `pmacro update`/`remove`, merged list/preview, skills
-- [ ] 02-03-PLAN.md — `install.js`, skill backup, status line script, lock file
-- [ ] 02-04-PLAN.md — CI matrix (Linux/macOS), README/manual docs, roadmap index
+**Plans**: TBD
 **UI hint**: yes
 
 ## Progress
@@ -61,4 +55,4 @@ Phases execute in numeric order: 1 → 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Engine | 4/4 | Complete | 2026-04-12 |
-| 2. Full Integration | 0/4 | Planned | - |
+| 2. Full Integration | 0/? | Not started | - |
