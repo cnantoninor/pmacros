@@ -1,6 +1,10 @@
 # Manual setup (Phase 1)
 
-Phase 1 does not ship `install.js` yet. Use this guide to register the `UserPromptSubmit` hook and copy skills from a **trusted** clone of the pmacros repository.
+> **Phase 2+ users:** Prefer `node install.js` over the manual steps below. Run it once from the repo root — it registers the hook, copies all skills, and sets up the status line automatically. Use `--force` to re-run, `--project` to also configure project-level settings. See [README.md](../README.md#install-phase-2) for details.
+
+The manual steps below are retained as a fallback for Phase 1 or for environments where the automated installer cannot run.
+
+Phase 1 does not ship `install.js`. Use this guide to register the `UserPromptSubmit` hook and copy skills from a **trusted** clone of the pmacros repository.
 
 ## Paths (runtime)
 
@@ -73,4 +77,18 @@ for d in pmacro-add pmacro-list pmacro-preview pmacro-status; do
 done
 ```
 
-Phase 2 will automate hook registration and skill copy via `install.js`.
+Phase 2 automates hook registration and skill copy via `node install.js`.
+
+## Status line (Phase 2)
+
+`node install.js` registers `scripts/pmacro-statusline.cjs` as the `statusLine.command` in `~/.claude/settings.json`. To register it manually, add the following key to your settings (reference: [Claude Code Status Line docs](https://code.claude.com/docs/en/statusline)):
+
+```json
+{
+  "statusLine": {
+    "command": "node /absolute/path/to/pmacros/scripts/pmacro-statusline.cjs"
+  }
+}
+```
+
+The status line script reads `~/.claude/pmacros/macros.json` and outputs the available tag names so they are visible in the Claude Code UI at a glance.
