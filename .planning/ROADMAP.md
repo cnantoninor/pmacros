@@ -13,7 +13,7 @@ pmacros ships in two phases. Phase 1 builds the core engine: users can define ma
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Core Engine** - Hook expansion, user-scope storage, add/list/preview, error safety (completed 2026-04-12)
-- [ ] **Phase 2: Full Integration** - Project scopes, update/remove, install script, status line
+- [x] **Phase 2: Full Integration** - Project scopes, update/remove, install script, status line (completed 2026-05-23)
 
 ## Phase Details
 
@@ -61,4 +61,4 @@ Phases execute in numeric order: 1 → 2
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Engine | 4/4 | Complete | 2026-04-12 |
-| 2. Full Integration | 0/4 | Planned | - |
+| 2. Full Integration | 4/4 | Complete | 2026-05-23 |
