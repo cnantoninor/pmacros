@@ -70,7 +70,6 @@ function main() {
 
     const promptText = typeof event.prompt === 'string' ? event.prompt : '';
 
-    // Resolve project root from hook event fields (D-02), falling back to process.cwd()
     const cwd =
       typeof event.cwd === 'string'
         ? event.cwd
@@ -82,7 +81,6 @@ function main() {
     try {
       const merged = getMergedMacrosSync(cwd);
       macros = merged.macros || {};
-      // Log warnings for failed sides (path only, never macro values)
       if (!merged.userResult.ok) {
         safeAppendLog({
           level: 'warn',

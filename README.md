@@ -10,7 +10,7 @@ Phase 2 is complete. You get:
 
 - **Inline expansion:** `{{tagname}}` in a prompt is replaced with the macro value via the hook.
 - **User-level storage:** `~/.claude/pmacros/macros.json` with atomic writes (`schemaVersion`, `approximateTokens` on write).
-- **Project-level macros:** `.claude/pmacros/macros.json` overrides same-named user macros during expansion. Use `pmacro --project` for repo-local CRUD.
+- **Project-level macros:** `.claude/pmacros/macros.json` overrides same-named user macros during expansion. Use `pmacro update --project` and `pmacro remove --project` for repo-local CRUD.
 - **Safe hook behavior:** the hook always exits `0`, never blocks your prompt; failures are logged and the original prompt passes through.
 - **Error log:** JSONL at `~/.claude/pmacros/hook-errors.log`; surfaced through `/pmacro-status`.
 - **Status line:** macro tag names shown in the Claude Code status bar via `scripts/pmacro-statusline.cjs`.
@@ -30,12 +30,6 @@ This registers the `UserPromptSubmit` hook in `~/.claude/settings.json`, copies 
 
 ```bash
 node install.js --force
-```
-
-To install with project-scope settings alongside the user-scope install:
-
-```bash
-node install.js --project
 ```
 
 For advanced or Phase 1 manual steps, see [docs/MANUAL-SETUP-PHASE1.md](docs/MANUAL-SETUP-PHASE1.md).
